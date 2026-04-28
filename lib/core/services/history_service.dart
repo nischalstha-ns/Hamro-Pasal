@@ -86,7 +86,7 @@ class HistoryService {
 
   Future<File> _getHistoryFile(String key) async {
     final dir = await getApplicationDocumentsDirectory();
-    return File(p.join(dir.path, '${key}.json'));
+    return File(p.join(dir.path, '$key.json'));
   }
 
   Future<String?> getLatestBackupPath() async {

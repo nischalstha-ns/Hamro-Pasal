@@ -87,8 +87,6 @@ class DataRestoreService {
         );
       }
 
-      final metadata = await _loadMetadata(extractDir);
-
       onProgress?.call(0.30, 'Processing products...');
       final productsResult = await _restoreProducts(
         extractDir,
@@ -115,7 +113,7 @@ class DataRestoreService {
 
       onProgress?.call(0.90, 'Processing settings & business profile...');
       final settingsResult = await _restoreSettings(extractDir);
-      settingsImported = settingsResult;
+      settingsImported = settingsResult.imported;
       errors.addAll(settingsResult.errors);
       warnings.addAll(settingsResult.warnings);
 
@@ -191,7 +189,6 @@ class DataRestoreService {
 
     final productsFile = File(p.join(dataDir.path, 'products.json'));
     final customersFile = File(p.join(dataDir.path, 'customers.json'));
-    final metadataFile = File(p.join(dataDir.path, 'metadata.json'));
 
     if (!await productsFile.exists() && !await customersFile.exists()) {
       errors.add('No valid data files found (products.json or customers.json)');
@@ -199,18 +196,6 @@ class DataRestoreService {
 
     if (errors.isNotEmpty) return _ValidationResult(isValid: false, errors: errors);
     return _ValidationResult(isValid: true, errors: []);
-  }
-
-  Future<BackupMetadata?> _loadMetadata(Directory extractDir) async {
-    try {
-      final metadataFile = File(p.join(extractDir.path, 'data', 'metadata.json'));
-      if (await metadataFile.exists()) {
-        final content = await metadataFile.readAsString();
-        final json = jsonDecode(content) as Map<String, dynamic>;
-        return BackupMetadata.fromJson(json);
-      }
-    } catch (_) {}
-    return null;
   }
 
   Future<_RestoreItemsResult> _restoreProducts(

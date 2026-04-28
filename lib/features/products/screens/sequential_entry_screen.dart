@@ -19,7 +19,6 @@ class SequentialEntryScreen extends ConsumerStatefulWidget {
 }
 
 class _SequentialEntryScreenState extends ConsumerState<SequentialEntryScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
   final _costPriceController = TextEditingController();

@@ -99,7 +99,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog> {
                       const Text('Payment Method', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: _selectedPaymentMethod,
+                        initialValue: _selectedPaymentMethod,
                         decoration: InputDecoration(
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -147,7 +147,6 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog> {
                   Switch(
                     value: _shouldPrintReceipt,
                     onChanged: (val) => setState(() => _shouldPrintReceipt = val),
-                    activeColor: const Color(0xFF1D9E75),
                   ),
                 ],
               ),

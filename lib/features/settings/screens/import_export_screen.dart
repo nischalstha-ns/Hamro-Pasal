@@ -127,7 +127,7 @@ class _ImportExportScreenState extends ConsumerState<ImportExportScreen> with Si
     );
   }
 
-Future<void> _startImport() async {
+  Future<void> _startImport() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['zip', 'csv', 'xlsx', 'xls'],
@@ -265,7 +265,6 @@ Future<void> _startImport() async {
       ),
     );
   }
-  }
 
   Future<void> _importZip(File file) async {
     final db = ref.read(appDatabaseProvider);
@@ -307,7 +306,7 @@ Future<void> _startImport() async {
               customersImported: result.customersImported,
               customersSkipped: result.customersSkipped,
               success: result.result != RestoreResult.failed,
-              errorMessage: result.errors.isNotEmpty ? result.errors.join(", ") : null,
+              errorMessage: result.errors.isNotEmpty ? result.errors.join(', ') : null,
             ));
             await _loadHistory();
 
@@ -323,91 +322,6 @@ Future<void> _startImport() async {
             } else {
               _showSnack('Restore failed: ${result.errors.join(", ")}', isError: true);
             }
-          }
-        },
-      ),
-    );
-  }
-
-  Future<void> _importOther(File file, String ext) async {
-    String chosen = 'all';
-    
-    if (ext != 'zip') {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['xlsx', 'xls', 'csv'],
-      );
-      if (result == null || result.files.isEmpty || !mounted) return;
-
-      if (result.files.first.extension == 'csv') {
-        chosen = await showDialog<String>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('What are you importing?'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.inventory_2, color: Colors.orange),
-                  title: const Text('Products'),
-                  onTap: () => Navigator.pop(ctx, 'products'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.people, color: Colors.blue),
-                  title: const Text('Customers'),
-                  onTap: () => Navigator.pop(ctx, 'customers'),
-                ),
-              ],
-            ),
-          ),
-        );
-        if (chosen == null || !mounted) return;
-      }
-    }
-
-    final db = ref.read(appDatabaseProvider);
-    ImportPreview preview;
-    try {
-      final importService = DataImportService(db);
-      preview = await importService.parseFile(file, chosen);
-    } catch (e) {
-      _showSnack('Failed to parse file: $e', isError: true);
-      return;
-    }
-
-    if (!mounted) return;
-
-    final confirmed = await ImportPreviewSheet.show(context, preview);
-    if (confirmed != true || !mounted) return;
-
-    ref.read(dataOperationProvider.notifier).reset();
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => ProgressDialog(
-        title: 'Importing ${chosen[0].toUpperCase()}${chosen.substring(1)}',
-        operation: () => ref.read(dataOperationProvider.notifier).runImport(db, preview),
-        onDone: (result) async {
-          if (result is ImportResult) {
-            final historyService = ref.read(historyServiceProvider);
-            await historyService.addImportRecord(ImportHistoryRecord(
-              id: generateImportId(),
-              fileName: file.path.split('/').last.split('\\').last,
-              importedAt: DateTime.now(),
-              type: chosen.toUpperCase(),
-              productsImported: chosen == 'products' ? result.imported : 0,
-              productsSkipped: chosen == 'products' ? result.failed : 0,
-              customersImported: chosen == 'customers' ? result.imported : 0,
-              customersSkipped: chosen == 'customers' ? result.failed : 0,
-              success: result.failed == 0,
-              errorMessage: result.errors.isNotEmpty ? result.errors.first : null,
-            ));
-            await _loadHistory();
-
-            _showSnack(
-              'Imported ${result.imported} records. Failed: ${result.failed}',
-              isError: result.failed > 0,
-            );
           }
         },
       ),

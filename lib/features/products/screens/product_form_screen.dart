@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:convert';
-import 'dart:ui' show Color;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -1230,7 +1229,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
             children: colorOptions.map((colorHex) {
               final colorValue = int.tryParse(colorHex.replaceAll('#', ''), radix: 16) ?? 0xFF000000;
               final displayColor = Color(0xFF000000 | colorValue);
-              final colorName = colorNames[colorHex] ?? 'Custom';
+              final colorName = colorNames[colorHex.toUpperCase()] ?? 'Custom';
 
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -1451,7 +1450,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                   itemCount: predefinedColors.length,
                   itemBuilder: (context, index) {
                     final color = predefinedColors[index];
-                    final hexColor = color.value.toRadixString(16).substring(2).toUpperCase();
+                    final hexColor = color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase();
                     final name = colorNames[hexColor] ?? 'Color';
 
                     return InkWell(
@@ -1616,7 +1615,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
             FilledButton(
               onPressed: () {
                 final colorName = controller.text.trim();
-                final colorHex = selectedColor.value.toRadixString(16).substring(2).toUpperCase();
+                final colorHex = selectedColor.toARGB32().toRadixString(16).substring(2).toUpperCase();
                 if (colorName.isNotEmpty) {
                   setState(() {
                     if (!_variants['Color']!.contains(colorHex)) {
@@ -1765,11 +1764,6 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
 
       if (isEdit) {
         // Update existing product
-        String? variantOptionsJson;
-        if (_hasVariants && _variants.isNotEmpty) {
-          variantOptionsJson = jsonEncode(_variants);
-        }
-
         final updatedProduct = widget.product!.copyWith(
           name: _nameController.text.trim(),
           barcode: _barcodeController.text.trim().isEmpty
@@ -1787,7 +1781,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
               : _categoryController.text.trim(),
           imagePath: _imagePath,
           hasVariants: _hasVariants,
-          variantOptions: variantOptionsJson,
+          variantOptions: _hasVariants && _variants.isNotEmpty ? jsonEncode(_variants) : null,
           expiryDate: _expiryAlertEnabled ? _expiryDate : null,
           expiryAlertEnabled: _expiryAlertEnabled,
           expiryAlertDays: _expiryAlertDays,
@@ -1815,11 +1809,6 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
         }
       } else {
         // Add new product
-        String? variantOptionsJson;
-        if (_hasVariants && _variants.isNotEmpty) {
-          variantOptionsJson = jsonEncode(_variants);
-        }
-
         final id = await ref.read(productActionsProvider.notifier).addProduct(
               name: _nameController.text.trim(),
               barcode: _barcodeController.text.trim().isEmpty

@@ -27,7 +27,18 @@ class DataExportService {
     _buildProductsSheet(excel, products);
 
     onProgress?.call(0.25, 'Loading categories…');
-    final categories = await _getUniqueCategories(products);
+    final categories = await (db.select(db.products)
+          ..orderBy([(t) => drift.OrderingTerm.asc(t.id)]))
+        .get()
+        .then((products) {
+      final cats = <String>{};
+      for (final product in products) {
+        if (product.category != null && product.category!.isNotEmpty) {
+          cats.add(product.category!);
+        }
+      }
+      return cats.toList();
+    });
     _buildCategoriesSheet(excel, categories);
 
     onProgress?.call(0.35, 'Loading customers…');
@@ -78,26 +89,6 @@ class DataExportService {
 
     onProgress?.call(1.0, 'Export complete!');
     return xlsxFile;
-  }
-
-  Future<List<String>> _getUniqueCategories(List<Product> products) async {
-    final categories = <String>{};
-    for (final product in products) {
-      if (product.category != null && product.category!.isNotEmpty) {
-        categories.add(product.category!);
-      }
-    }
-    return categories.toList();
-  }
-
-  Future<Map<String, String?>> _getBusinessProfile(List<Setting> settings) async {
-    final profile = <String, String?>{};
-    for (final s in settings) {
-      if (s.key.startsWith('business_')) {
-        profile[s.key] = s.value;
-      }
-    }
-    return profile;
   }
 
   void _buildProductsSheet(Excel excel, List<Product> products) {

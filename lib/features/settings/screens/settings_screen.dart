@@ -223,32 +223,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            RadioListTile<ThemeMode>(
-              title: const Text('System default'),
-              value: ThemeMode.system,
-              groupValue: currentMode,
-              onChanged: (value) {
+            InkWell(
+              onTap: () {
                 ref.read(appSettingsNotifierProvider.notifier).updateThemeMode(ThemeMode.system);
                 Navigator.pop(context);
               },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      currentMode == ThemeMode.system ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 16),
+                    const Text('System default'),
+                  ],
+                ),
+              ),
             ),
-            RadioListTile<ThemeMode>(
-              title: const Text('Light'),
-              value: ThemeMode.light,
-              groupValue: currentMode,
-              onChanged: (value) {
+            InkWell(
+              onTap: () {
                 ref.read(appSettingsNotifierProvider.notifier).updateThemeMode(ThemeMode.light);
                 Navigator.pop(context);
               },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      currentMode == ThemeMode.light ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 16),
+                    const Text('Light'),
+                  ],
+                ),
+              ),
             ),
-            RadioListTile<ThemeMode>(
-              title: const Text('Dark'),
-              value: ThemeMode.dark,
-              groupValue: currentMode,
-              onChanged: (value) {
+            InkWell(
+              onTap: () {
                 ref.read(appSettingsNotifierProvider.notifier).updateThemeMode(ThemeMode.dark);
                 Navigator.pop(context);
               },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      currentMode == ThemeMode.dark ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 16),
+                    const Text('Dark'),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
