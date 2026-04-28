@@ -68,11 +68,10 @@ class CustomerActions extends _$CustomerActions {
     String? panNumber,
     double? balance,
   }) async {
-    state = const AsyncValue.loading();
-    
-    return await AsyncValue.guard(() async {
+    int resultId = 0;
+    try {
       final repository = ref.read(customersRepositoryProvider);
-      final id = await repository.insertCustomer(
+      resultId = await repository.insertCustomer(
         name: name,
         phone: phone,
         email: email,
@@ -80,47 +79,43 @@ class CustomerActions extends _$CustomerActions {
         panNumber: panNumber,
         balance: balance,
       );
-      
       ref.invalidate(customersStreamProvider);
-      
-      return id;
-    }).then((asyncValue) {
-      state = asyncValue;
-      return asyncValue.value ?? 0;
-    });
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+    return resultId;
   }
 
   Future<bool> updateCustomer(CustomerModel customer) async {
-    state = const AsyncValue.loading();
-    
-    return await AsyncValue.guard(() async {
+    bool success = false;
+    try {
       final repository = ref.read(customersRepositoryProvider);
-      final success = await repository.updateCustomer(customer);
-      
+      success = await repository.updateCustomer(customer);
       ref.invalidate(customersStreamProvider);
       ref.invalidate(customerProvider(customer.id));
-      
-      return success;
-    }).then((asyncValue) {
-      state = asyncValue;
-      return asyncValue.value ?? false;
-    });
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+    return success;
   }
 
   Future<bool> deleteCustomer(int id) async {
-    state = const AsyncValue.loading();
-    
-    return await AsyncValue.guard(() async {
+    bool result = false;
+    try {
       final repository = ref.read(customersRepositoryProvider);
-      final result = await repository.deleteCustomer(id);
-      
+      final rows = await repository.deleteCustomer(id);
+      result = rows > 0;
       ref.invalidate(customersStreamProvider);
-      
-      return result > 0;
-    }).then((asyncValue) {
-      state = asyncValue;
-      return asyncValue.value ?? false;
-    });
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+    return result;
   }
 
   Future<bool> toggleActiveStatus(int id, bool isActive) async {

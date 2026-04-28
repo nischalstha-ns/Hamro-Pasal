@@ -128,97 +128,102 @@ class ProductActions extends _$ProductActions {
     DateTime? expiryDate,
     bool expiryAlertEnabled = false,
     int expiryAlertDays = 7,
+    bool hasVariants = false,
+    String? variantOptions,
   }) async {
-    state = const AsyncValue.loading();
-    
-    return await AsyncValue.guard(() async {
+    int resultId = 0;
+    try {
       final repository = ref.read(productsRepositoryProvider);
-      final id = await repository.insertProduct(
-        name: name,
-        nameNepali: nameNepali,
-        description: description,
-        barcode: barcode,
-        sku: sku,
-        price: price,
-        costPrice: costPrice,
-        stock: stock,
-        minStock: minStock,
-        unit: unit,
-        category: category,
-        imagePath: imagePath,
-        expiryDate: expiryDate,
-        expiryAlertEnabled: expiryAlertEnabled,
-        expiryAlertDays: expiryAlertDays,
-      );
-      
+resultId = await repository.insertProduct(
+          name: name,
+          nameNepali: nameNepali,
+          description: description,
+          barcode: barcode,
+          sku: sku,
+          price: price,
+          costPrice: costPrice,
+          stock: stock,
+          minStock: minStock,
+          unit: unit,
+          category: category,
+          imagePath: imagePath,
+          expiryDate: expiryDate,
+          expiryAlertEnabled: expiryAlertEnabled,
+          expiryAlertDays: expiryAlertDays,
+          hasVariants: hasVariants,
+          variantOptions: variantOptions,
+        );
+
       // Invalidate products list
       ref.invalidate(productsStreamProvider);
       ref.invalidate(productCategoriesProvider);
-      
-      return id;
-    }).then((asyncValue) {
-      state = asyncValue;
-      return asyncValue.value ?? 0;
-    });
+
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+    return resultId;
   }
 
   Future<bool> updateProduct(ProductModel product) async {
-    state = const AsyncValue.loading();
-    
-    return await AsyncValue.guard(() async {
+    bool success = false;
+    try {
       final repository = ref.read(productsRepositoryProvider);
-      final success = await repository.updateProduct(product);
-      
+      success = await repository.updateProduct(product);
+
       // Invalidate products list
       ref.invalidate(productsStreamProvider);
       ref.invalidate(productProvider(product.id));
-      
-      return success;
-    }).then((asyncValue) {
-      state = asyncValue;
-      return asyncValue.value ?? false;
-    });
+
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+    return success;
   }
 
   Future<bool> deleteProduct(int id) async {
-    state = const AsyncValue.loading();
-    
-    return await AsyncValue.guard(() async {
+    bool result = false;
+    try {
       final repository = ref.read(productsRepositoryProvider);
-      final result = await repository.deleteProduct(id);
-      
+      final rows = await repository.deleteProduct(id);
+      result = rows > 0;
+
       // Invalidate products list
       ref.invalidate(productsStreamProvider);
       ref.invalidate(productCategoriesProvider);
-      
-      return result > 0;
-    }).then((asyncValue) {
-      state = asyncValue;
-      return asyncValue.value ?? false;
-    });
+
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+    return result;
   }
 
   Future<bool> toggleActiveStatus(int id, bool isActive) async {
     final repository = ref.read(productsRepositoryProvider);
     final success = await repository.toggleActiveStatus(id, isActive);
-    
+
     if (success) {
       ref.invalidate(productsStreamProvider);
       ref.invalidate(productProvider(id));
     }
-    
+
     return success;
   }
 
   Future<bool> updateStock(int id, int newStock) async {
     final repository = ref.read(productsRepositoryProvider);
     final success = await repository.updateStock(id, newStock);
-    
+
     if (success) {
       ref.invalidate(productsStreamProvider);
       ref.invalidate(productProvider(id));
     }
-    
+
     return success;
   }
 }

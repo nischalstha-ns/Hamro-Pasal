@@ -15,6 +15,10 @@ class ItemSettings {
     required this.itemWiseTaxEnabled,
     required this.itemWiseDiscountEnabled,
     required this.updateSalePriceFromTxnEnabled,
+    required this.sequentialEntryEnabled,
+    required this.quickVariantEntryEnabled,
+    required this.autoBarcodeEnabled,
+    required this.autoSkuEnabled,
   });
 
   factory ItemSettings.defaults() {
@@ -34,6 +38,10 @@ class ItemSettings {
       itemWiseTaxEnabled: false,
       itemWiseDiscountEnabled: false,
       updateSalePriceFromTxnEnabled: false,
+      sequentialEntryEnabled: true,
+      quickVariantEntryEnabled: true,
+      autoBarcodeEnabled: true,
+      autoSkuEnabled: true,
     );
   }
 
@@ -52,6 +60,10 @@ class ItemSettings {
   final bool itemWiseTaxEnabled;
   final bool itemWiseDiscountEnabled;
   final bool updateSalePriceFromTxnEnabled;
+  final bool sequentialEntryEnabled;
+  final bool quickVariantEntryEnabled;
+  final bool autoBarcodeEnabled;
+  final bool autoSkuEnabled;
 
   ItemSettings copyWith({
     bool? enableItem,
@@ -69,6 +81,10 @@ class ItemSettings {
     bool? itemWiseTaxEnabled,
     bool? itemWiseDiscountEnabled,
     bool? updateSalePriceFromTxnEnabled,
+    bool? sequentialEntryEnabled,
+    bool? quickVariantEntryEnabled,
+    bool? autoBarcodeEnabled,
+    bool? autoSkuEnabled,
   }) {
     return ItemSettings(
       enableItem: enableItem ?? this.enableItem,
@@ -90,6 +106,10 @@ class ItemSettings {
           itemWiseDiscountEnabled ?? this.itemWiseDiscountEnabled,
       updateSalePriceFromTxnEnabled:
           updateSalePriceFromTxnEnabled ?? this.updateSalePriceFromTxnEnabled,
+      sequentialEntryEnabled: sequentialEntryEnabled ?? this.sequentialEntryEnabled,
+      quickVariantEntryEnabled: quickVariantEntryEnabled ?? this.quickVariantEntryEnabled,
+      autoBarcodeEnabled: autoBarcodeEnabled ?? this.autoBarcodeEnabled,
+      autoSkuEnabled: autoSkuEnabled ?? this.autoSkuEnabled,
     );
   }
 }

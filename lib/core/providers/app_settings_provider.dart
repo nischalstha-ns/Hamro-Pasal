@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter/material.dart';
 import '../../features/products/providers/products_provider.dart';
 
 part 'app_settings_provider.g.dart';
@@ -12,6 +13,7 @@ class AppSettings {
   final String invoicePrefix;
   final String currency;
   final String dateFormat;
+  final ThemeMode themeMode;
 
   AppSettings({
     required this.vatRate,
@@ -22,6 +24,7 @@ class AppSettings {
     required this.invoicePrefix,
     required this.currency,
     required this.dateFormat,
+    required this.themeMode,
   });
 
   AppSettings copyWith({
@@ -33,6 +36,7 @@ class AppSettings {
     String? invoicePrefix,
     String? currency,
     String? dateFormat,
+    ThemeMode? themeMode,
   }) {
     return AppSettings(
       vatRate: vatRate ?? this.vatRate,
@@ -43,6 +47,7 @@ class AppSettings {
       invoicePrefix: invoicePrefix ?? this.invoicePrefix,
       currency: currency ?? this.currency,
       dateFormat: dateFormat ?? this.dateFormat,
+      themeMode: themeMode ?? this.themeMode,
     );
   }
 }
@@ -61,6 +66,8 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
     final invoicePrefix = await db.getSetting('invoice_prefix') ?? 'INV';
     final currency = await db.getSetting('currency') ?? 'NPR';
     final dateFormat = await db.getSetting('date_format') ?? 'yyyy-MM-dd';
+    final themeModeStr = await db.getSetting('theme_mode') ?? 'system';
+    final themeMode = _parseThemeMode(themeModeStr);
 
     return AppSettings(
       vatRate: vatRate,
@@ -71,7 +78,30 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
       invoicePrefix: invoicePrefix,
       currency: currency,
       dateFormat: dateFormat,
+      themeMode: themeMode,
     );
+  }
+
+  ThemeMode _parseThemeMode(String value) {
+    switch (value) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
+  }
+
+  String _themeModeToString(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return 'light';
+      case ThemeMode.dark:
+        return 'dark';
+      case ThemeMode.system:
+        return 'system';
+    }
   }
 
   Future<void> updateVatRate(double rate) async {
@@ -119,6 +149,12 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
   Future<void> updateDateFormat(String format) async {
     final db = ref.read(appDatabaseProvider);
     await db.setSetting('date_format', format);
+    ref.invalidateSelf();
+  }
+
+  Future<void> updateThemeMode(ThemeMode mode) async {
+    final db = ref.read(appDatabaseProvider);
+    await db.setSetting('theme_mode', _themeModeToString(mode));
     ref.invalidateSelf();
   }
 }

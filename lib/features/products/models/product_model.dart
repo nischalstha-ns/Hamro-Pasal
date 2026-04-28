@@ -19,6 +19,8 @@ class ProductModel with _$ProductModel {
     required String unit,
     String? category,
     String? imagePath,
+    @Default(false) bool hasVariants,
+    String? variantOptions,
     DateTime? expiryDate,
     required bool expiryAlertEnabled,
     required int expiryAlertDays,
@@ -46,5 +48,7 @@ class ProductFormData with _$ProductFormData {
     String? unit,
     String? category,
     String? imagePath,
+    bool? hasVariants,
+    String? variantOptions,
   }) = _ProductFormData;
 }

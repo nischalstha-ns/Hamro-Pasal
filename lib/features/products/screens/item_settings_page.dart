@@ -261,6 +261,53 @@ class ItemSettingsPage extends ConsumerWidget {
             title: const Text('Description'),
             secondary: const Icon(Icons.info_outline),
           ),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Smart Entry',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ),
+          SwitchListTile(
+            value: settings.sequentialEntryEnabled,
+            onChanged: (v) => ref
+                .read(itemSettingsProvider.notifier)
+                .setSequentialEntryEnabled(v),
+            title: const Text('Sequential Entry Mode'),
+            subtitle: const Text('Step-by-step guided input for fast entry'),
+            secondary: const Icon(Icons.format_list_numbered),
+          ),
+          SwitchListTile(
+            value: settings.quickVariantEntryEnabled,
+            onChanged: (v) => ref
+                .read(itemSettingsProvider.notifier)
+                .setQuickVariantEntryEnabled(v),
+            title: const Text('Quick Variant Entry'),
+            subtitle: const Text('Fast variant selection with templates'),
+            secondary: const Icon(Icons.style),
+          ),
+          SwitchListTile(
+            value: settings.autoBarcodeEnabled,
+            onChanged: (v) => ref
+                .read(itemSettingsProvider.notifier)
+                .setAutoBarcodeEnabled(v),
+            title: const Text('Auto Barcode'),
+            subtitle: const Text('Generate barcode automatically'),
+            secondary: const Icon(Icons.qr_code),
+          ),
+          SwitchListTile(
+            value: settings.autoSkuEnabled,
+            onChanged: (v) => ref
+                .read(itemSettingsProvider.notifier)
+                .setAutoSkuEnabled(v),
+            title: const Text('Auto SKU'),
+            subtitle: const Text('Generate SKU automatically'),
+            secondary: const Icon(Icons.tag),
+          ),
         ],
       ),
     );

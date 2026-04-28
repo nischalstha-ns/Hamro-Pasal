@@ -21,6 +21,8 @@ import '../../features/transactions/screens/transactions_list_screen.dart';
 import '../../features/transactions/screens/sale_form_screen.dart';
 import '../../features/transactions/screens/purchase_form_screen.dart';
 import '../../features/transactions/screens/expense_form_screen.dart';
+import '../../features/pos/screens/pos_screen.dart';
+import '../../features/products/screens/sequential_entry_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -143,6 +145,16 @@ GoRouter appRouter(AppRouterRef ref) {
         path: '/expense/new',
         name: 'expense-new',
         builder: (context, state) => const ExpenseFormScreen(),
+      ),
+      GoRoute(
+        path: '/pos',
+        name: 'pos',
+        builder: (context, state) => const PosScreen(),
+      ),
+      GoRoute(
+        path: '/product/add/quick',
+        name: 'product-quick-add',
+        builder: (context, state) => const SequentialEntryScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

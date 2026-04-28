@@ -140,6 +140,11 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
           onPressed: () => context.push('/notifications'),
         ),
         IconButton(
+          icon: const Icon(Icons.point_of_sale_outlined),
+          tooltip: 'POS System',
+          onPressed: () => context.push('/pos'),
+        ),
+        IconButton(
           icon: const Icon(Icons.settings_outlined),
           onPressed: () => context.push('/settings'),
         ),

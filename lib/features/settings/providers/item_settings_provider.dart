@@ -23,6 +23,10 @@ class ItemSettingsNotifier extends AsyncNotifier<ItemSettings> {
   static const _kItemWiseTax = 'item.itemWiseTax';
   static const _kItemWiseDiscount = 'item.itemWiseDiscount';
   static const _kUpdateSalePriceFromTxn = 'item.updateSalePriceFromTxn';
+  static const _kSequentialEntry = 'item.sequentialEntry';
+  static const _kQuickVariantEntry = 'item.quickVariantEntry';
+  static const _kAutoBarcode = 'item.autoBarcode';
+  static const _kAutoSku = 'item.autoSku';
 
   @override
   Future<ItemSettings> build() async {
@@ -72,6 +76,22 @@ class ItemSettingsNotifier extends AsyncNotifier<ItemSettings> {
       updateSalePriceFromTxnEnabled: await readBool(
         _kUpdateSalePriceFromTxn,
         defaults.updateSalePriceFromTxnEnabled,
+      ),
+      sequentialEntryEnabled: await readBool(
+        _kSequentialEntry,
+        defaults.sequentialEntryEnabled,
+      ),
+      quickVariantEntryEnabled: await readBool(
+        _kQuickVariantEntry,
+        defaults.quickVariantEntryEnabled,
+      ),
+      autoBarcodeEnabled: await readBool(
+        _kAutoBarcode,
+        defaults.autoBarcodeEnabled,
+      ),
+      autoSkuEnabled: await readBool(
+        _kAutoSku,
+        defaults.autoSkuEnabled,
       ),
     );
   }
@@ -180,6 +200,30 @@ class ItemSettingsNotifier extends AsyncNotifier<ItemSettings> {
     final current = state.valueOrNull ?? ItemSettings.defaults();
     state = AsyncData(current.copyWith(updateSalePriceFromTxnEnabled: value));
     await _writeBool(_kUpdateSalePriceFromTxn, value);
+  }
+
+  Future<void> setSequentialEntryEnabled(bool value) async {
+    final current = state.valueOrNull ?? ItemSettings.defaults();
+    state = AsyncData(current.copyWith(sequentialEntryEnabled: value));
+    await _writeBool(_kSequentialEntry, value);
+  }
+
+  Future<void> setQuickVariantEntryEnabled(bool value) async {
+    final current = state.valueOrNull ?? ItemSettings.defaults();
+    state = AsyncData(current.copyWith(quickVariantEntryEnabled: value));
+    await _writeBool(_kQuickVariantEntry, value);
+  }
+
+  Future<void> setAutoBarcodeEnabled(bool value) async {
+    final current = state.valueOrNull ?? ItemSettings.defaults();
+    state = AsyncData(current.copyWith(autoBarcodeEnabled: value));
+    await _writeBool(_kAutoBarcode, value);
+  }
+
+  Future<void> setAutoSkuEnabled(bool value) async {
+    final current = state.valueOrNull ?? ItemSettings.defaults();
+    state = AsyncData(current.copyWith(autoSkuEnabled: value));
+    await _writeBool(_kAutoSku, value);
   }
 }
 

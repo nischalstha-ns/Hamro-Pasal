@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -110,6 +111,16 @@ class _SaleFormScreenState extends ConsumerState<SaleFormScreen> {
         title: const Text('Sales'),
         actions: [
           _buildCreditCashToggle(),
+          FilledButton.icon(
+            onPressed: () => context.push('/pos'),
+            icon: const Icon(Icons.point_of_sale_outlined, size: 18),
+            label: const Text('Switch to POS'),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF1D9E75),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+          ),
+          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {},

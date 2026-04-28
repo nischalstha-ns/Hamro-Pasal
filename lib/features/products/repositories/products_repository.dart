@@ -80,6 +80,8 @@ class ProductsRepository {
     DateTime? expiryDate,
     bool expiryAlertEnabled = false,
     int expiryAlertDays = 7,
+    bool hasVariants = false,
+    String? variantOptions,
   }) async {
     return await _database.insertProduct(
       ProductsCompanion.insert(
@@ -98,6 +100,8 @@ class ProductsRepository {
         expiryDate: Value(expiryDate),
         expiryAlertEnabled: Value(expiryAlertEnabled),
         expiryAlertDays: Value(expiryAlertDays),
+        hasVariants: Value(hasVariants),
+        variantOptions: Value(variantOptions),
       ),
     );
   }
@@ -122,6 +126,8 @@ class ProductsRepository {
         expiryDate: product.expiryDate,
         expiryAlertEnabled: product.expiryAlertEnabled,
         expiryAlertDays: product.expiryAlertDays,
+        hasVariants: product.hasVariants,
+        variantOptions: product.variantOptions,
         isActive: product.isActive,
         createdAt: product.createdAt,
         updatedAt: DateTime.now(),
@@ -185,6 +191,8 @@ class ProductsRepository {
       expiryDate: product.expiryDate,
       expiryAlertEnabled: product.expiryAlertEnabled,
       expiryAlertDays: product.expiryAlertDays,
+      hasVariants: product.hasVariants,
+      variantOptions: product.variantOptions,
       isActive: product.isActive,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,

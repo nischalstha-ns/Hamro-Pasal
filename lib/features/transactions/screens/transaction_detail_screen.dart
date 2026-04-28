@@ -5,6 +5,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/services/pdf_invoice_service.dart';
 import '../../../core/services/thermal_printer_service.dart';
+import '../../../core/providers/business_profile_provider.dart';
 import '../models/transaction_model.dart';
 import '../providers/transactions_provider.dart';
 
@@ -496,8 +497,17 @@ class TransactionDetailScreen extends ConsumerWidget {
         ),
       );
 
+      // Get business profile
+      final businessProfile = await ref.read(businessProfileNotifierProvider.future);
+
       // Generate PDF
-      final pdfFile = await _generatePdfInvoice(transactionAsync);
+      final pdfFile = await _generatePdfInvoice(
+        transactionAsync,
+        businessName: businessProfile.businessName.isNotEmpty ? businessProfile.businessName : null,
+        businessAddress: businessProfile.address,
+        businessPan: businessProfile.panNumber,
+        businessPhone: businessProfile.phone,
+      );
 
       // Close loading
       if (!context.mounted) return;
@@ -543,8 +553,17 @@ class TransactionDetailScreen extends ConsumerWidget {
         ),
       );
 
+      // Get business profile
+      final businessProfile = await ref.read(businessProfileNotifierProvider.future);
+
       // Generate PDF
-      final pdfFile = await _generatePdfInvoice(transactionAsync);
+      final pdfFile = await _generatePdfInvoice(
+        transactionAsync,
+        businessName: businessProfile.businessName.isNotEmpty ? businessProfile.businessName : null,
+        businessAddress: businessProfile.address,
+        businessPan: businessProfile.panNumber,
+        businessPhone: businessProfile.phone,
+      );
 
       // Close loading
       if (!context.mounted) return;
@@ -580,6 +599,9 @@ class TransactionDetailScreen extends ConsumerWidget {
     }
 
     try {
+      // Get business profile
+      final businessProfile = await ref.read(businessProfileNotifierProvider.future);
+
       // Convert transaction items to receipt items
       final receiptItems = transactionAsync.items.map((item) {
         return ReceiptItem(
@@ -592,10 +614,10 @@ class TransactionDetailScreen extends ConsumerWidget {
 
       // Generate thermal receipt bytes
       final receiptBytes = ThermalPrinterService.generateReceipt(
-        businessName: 'HamroByapar',
-        businessAddress: 'Kathmandu, Nepal',
-        businessPhone: null,
-        businessPan: null,
+        businessName: businessProfile.businessName.isNotEmpty ? businessProfile.businessName : 'HamroByapar',
+        businessAddress: businessProfile.address,
+        businessPhone: businessProfile.phone,
+        businessPan: businessProfile.panNumber,
         invoiceNumber: transactionAsync.invoiceNumber,
         invoiceDate: transactionAsync.transactionDate,
         customerName: transactionAsync.customerName ?? 'Walk-in Customer',
@@ -664,7 +686,7 @@ class TransactionDetailScreen extends ConsumerWidget {
     }
   }
 
-  Future<File> _generatePdfInvoice(TransactionModel transaction) async {
+  Future<File> _generatePdfInvoice(TransactionModel transaction, {String? businessName, String? businessAddress, String? businessPan, String? businessPhone}) async {
     // Convert transaction items to invoice items
     final invoiceItems = transaction.items.map((item) {
       return InvoiceItem(
@@ -688,10 +710,10 @@ class TransactionDetailScreen extends ConsumerWidget {
       vatAmount: transaction.vatAmount,
       total: transaction.totalAmount,
       notes: transaction.notes,
-      businessName: 'HamroByapar',
-      businessAddress: 'Kathmandu, Nepal', // TODO: Get from settings
-      businessPan: null, // TODO: Get from settings
-      businessPhone: null, // TODO: Get from settings
+      businessName: businessName ?? 'HamroByapar',
+      businessAddress: businessAddress,
+      businessPan: businessPan,
+      businessPhone: businessPhone,
     );
   }
 

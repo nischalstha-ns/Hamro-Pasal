@@ -39,6 +39,7 @@ class TransactionItemModel with _$TransactionItemModel {
     required int quantity,
     required double unitPrice,
     required double totalPrice,
+    String? selectedVariant,
   }) = _TransactionItemModel;
 
   factory TransactionItemModel.fromJson(Map<String, dynamic> json) =>

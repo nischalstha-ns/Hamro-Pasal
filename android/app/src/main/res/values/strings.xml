@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HamroByapar</string>
+    <!-- Google OAuth 2.0 Client ID (Android) -->
+    <string name="default_web_client_id">9917734932-9tjm5jajrctrq0ae9ehd8j37k98vgd9t.apps.googleusercontent.com</string>
+</resources>

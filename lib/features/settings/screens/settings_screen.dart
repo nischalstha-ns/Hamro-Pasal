@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/app_settings_provider.dart';
-import '../../products/providers/products_provider.dart';
 import 'tax_settings_screen.dart';
 import 'invoice_settings_screen.dart';
 import 'preferences_screen.dart';
-import 'data_management_screen.dart';
+import 'backup_restore_screen.dart';
+import 'import_export_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -63,21 +63,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _SettingItem(
                   icon: Icons.backup,
                   title: 'Backup & Restore',
-                  subtitle: 'Google Drive backup',
-                  onTap: () => _navigateToDataManagement(context),
+                  subtitle: 'Google Drive or Local backup',
+                  onTap: () => _navigateToBackupRestore(context),
                 ),
                 _SettingItem(
                   icon: Icons.import_export,
                   title: 'Import/Export',
-                  subtitle: 'CSV, Excel',
-                  onTap: () => _navigateToDataManagement(context),
+                  subtitle: 'Zip, CSV, Excel',
+                  onTap: () => _navigateToImportExport(context),
                 ),
-                _SettingItem(
-                  icon: Icons.delete_outline,
-                  title: 'Clear Data',
-                  subtitle: 'Delete all data',
-                  onTap: () => _confirmClearData(context),
-                ),
+
               ],
             ),
             const SizedBox(height: 16),
@@ -90,6 +85,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: 'App Preferences',
                   subtitle: 'Language: ${settings.language == 'en' ? 'English' : 'नेपाली'}, Calendar: ${settings.calendarType.toUpperCase()}',
                   onTap: () => _navigateToPreferences(context),
+                ),
+                _SettingItem(
+                  icon: Icons.dark_mode_outlined,
+                  title: 'Theme',
+                  subtitle: _getThemeLabel(settings.themeMode),
+                  onTap: () => _showThemeDialog(context, ref, settings.themeMode),
                 ),
               ],
             ),
@@ -183,10 +184,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  void _navigateToDataManagement(BuildContext context) {
+  void _navigateToBackupRestore(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const DataManagementScreen()),
+      MaterialPageRoute(builder: (_) => const BackupRestoreScreen()),
+    );
+  }
+
+  void _navigateToImportExport(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ImportExportScreen()),
     );
   }
 
@@ -196,56 +204,58 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Future<void> _confirmClearData(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear All Data'),
-        content: const Text(
-          'This will permanently delete all your data including products, customers, and transactions. This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Delete All'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      try {
-        final db = ref.read(appDatabaseProvider);
-        await db.delete(db.transactionItems).go();
-        await db.delete(db.transactions).go();
-        await db.delete(db.products).go();
-        await db.delete(db.customers).go();
-        await db.delete(db.settings).go();
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('All data cleared successfully')),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error clearing data: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
+  String _getThemeLabel(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return 'Light';
+      case ThemeMode.dark:
+        return 'Dark';
+      case ThemeMode.system:
+        return 'System default';
     }
   }
+
+  void _showThemeDialog(BuildContext context, WidgetRef ref, ThemeMode currentMode) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Theme'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<ThemeMode>(
+              title: const Text('System default'),
+              value: ThemeMode.system,
+              groupValue: currentMode,
+              onChanged: (value) {
+                ref.read(appSettingsNotifierProvider.notifier).updateThemeMode(ThemeMode.system);
+                Navigator.pop(context);
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: const Text('Light'),
+              value: ThemeMode.light,
+              groupValue: currentMode,
+              onChanged: (value) {
+                ref.read(appSettingsNotifierProvider.notifier).updateThemeMode(ThemeMode.light);
+                Navigator.pop(context);
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: const Text('Dark'),
+              value: ThemeMode.dark,
+              groupValue: currentMode,
+              onChanged: (value) {
+                ref.read(appSettingsNotifierProvider.notifier).updateThemeMode(ThemeMode.dark);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 }
 
 class _SettingItem {

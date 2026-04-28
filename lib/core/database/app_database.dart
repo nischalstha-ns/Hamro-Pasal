@@ -16,6 +16,11 @@ class Products extends Table {
   TextColumn get unit => text().withDefault(const Constant('pcs'))();
   TextColumn get category => text().nullable()();
   TextColumn get imagePath => text().nullable()();
+  
+  // Dynamic Variants
+  BoolColumn get hasVariants => boolean().withDefault(const Constant(false))();
+  TextColumn get variantOptions => text().nullable()(); // JSON string like {"Size": ["S","M"], "Color": ["Red"]}
+
   DateTimeColumn get expiryDate => dateTime().nullable()();
   BoolColumn get expiryAlertEnabled => boolean().withDefault(const Constant(false))();
   IntColumn get expiryAlertDays => integer().withDefault(const Constant(7))();
@@ -64,6 +69,7 @@ class TransactionItems extends Table {
   IntColumn get quantity => integer()();
   RealColumn get unitPrice => real()();
   RealColumn get totalPrice => real()();
+  TextColumn get selectedVariant => text().nullable()(); // E.g., "Size: M, Color: Red"
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -83,7 +89,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -101,6 +107,11 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(products, products.expiryDate);
           await m.addColumn(products, products.expiryAlertEnabled);
           await m.addColumn(products, products.expiryAlertDays);
+        }
+        if (from < 6) {
+          await m.addColumn(products, products.hasVariants);
+          await m.addColumn(products, products.variantOptions);
+          await m.addColumn(transactionItems, transactionItems.selectedVariant);
         }
       },
     );

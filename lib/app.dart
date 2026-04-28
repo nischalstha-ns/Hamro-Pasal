@@ -5,6 +5,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'l10n/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
+import 'core/providers/app_settings_provider.dart';
 
 class DigitalKhataApp extends ConsumerWidget {
   const DigitalKhataApp({super.key});
@@ -12,6 +13,7 @@ class DigitalKhataApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    final appSettingsAsync = ref.watch(appSettingsNotifierProvider);
 
     return DynamicColorBuilder(
       builder: (lightDynamic, darkDynamic) {
@@ -22,7 +24,11 @@ class DigitalKhataApp extends ConsumerWidget {
           // Theme
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.system,
+          themeMode: appSettingsAsync.when(
+            data: (settings) => settings.themeMode,
+            loading: () => ThemeMode.system,
+            error: (_, __) => ThemeMode.system,
+          ),
 
           // Localization
           localizationsDelegates: const [

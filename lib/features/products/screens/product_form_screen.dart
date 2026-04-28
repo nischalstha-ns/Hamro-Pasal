@@ -1,6 +1,9 @@
 import 'dart:io';
+import 'dart:convert';
+import 'dart:ui' show Color;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -46,6 +49,43 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   bool _isService = false;
   int _selectedDetailsTab = 0;
   bool _showWholesale = false;
+  bool _hasVariants = false;
+  Map<String, List<String>> _variants = {};
+
+  static const Map<String, List<String>> clothingSizes = {
+    'Clothing': ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'],
+    'Kids': ['2-3Y', '4-5Y', '6-7Y', '8-9Y', '10-11Y', '12-13Y'],
+  };
+
+  static const Map<String, List<String>> shoeSizes = {
+    'US Men': ['6', '7', '8', '9', '10', '11', '12', '13'],
+    'US Women': ['5', '6', '7', '8', '9', '10', '11'],
+    'UK': ['5', '6', '7', '8', '9', '10', '11'],
+    'EU': ['38', '39', '40', '41', '42', '43', '44', '45'],
+  };
+
+  static const Map<String, List<String>> apparelSizes = {
+    'Shirt': ['30', '32', '34', '36', '38', '40', '42', '44'],
+    'Jeans': ['28', '30', '32', '34', '36', '38'],
+  };
+
+  static const List<Color> predefinedColors = [
+    Color(0xFF000000), Color(0xFFFFFFFF), Color(0xFF808080),
+    Color(0xFF000080), Color(0xFF0000FF), Color(0xFF0080FF),
+    Color(0xFF00FFFF), Color(0xFF00FF00), Color(0xFF80FF00),
+    Color(0xFFFFFF00), Color(0xFFFF8000), Color(0xFFFF0000),
+    Color(0xFFFF0080), Color(0xFFFF00FF), Color(0xFF8000FF),
+    Color(0xFF8B4513), Color(0xFFFFD700), Color(0xFFC0C0C0),
+  ];
+
+  static const Map<String, String> colorNames = {
+    'FF000000': 'Black', 'FFFFFFFF': 'White', 'FF808080': 'Gray',
+    'FF000080': 'Navy', 'FF0000FF': 'Blue', 'FF0080FF': 'Sky Blue',
+    'FF00FFFF': 'Cyan', 'FF00FF00': 'Green', 'FF80FF00': 'Lime',
+    'FFFFFF00': 'Yellow', 'FFFF8000': 'Orange', 'FFFF0000': 'Red',
+    'FFFF0080': 'Pink', 'FFFF00FF': 'Magenta', 'FF8000FF': 'Purple',
+    'FF8B4513': 'Brown', 'FFFFD700': 'Gold', 'FFC0C0C0': 'Silver',
+  };
 
   final List<String> _units = [
     'pcs',
@@ -89,6 +129,16 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     _expiryDate = product.expiryDate;
     _expiryAlertEnabled = product.expiryAlertEnabled;
     _expiryAlertDays = product.expiryAlertDays;
+    
+    _hasVariants = product.hasVariants;
+    if (product.variantOptions != null && product.variantOptions!.isNotEmpty) {
+      try {
+        final Map<String, dynamic> decoded = jsonDecode(product.variantOptions!);
+        _variants = decoded.map((key, value) => MapEntry(key, List<String>.from(value)));
+      } catch (_) {
+        _variants = {};
+      }
+    }
   }
 
   @override
@@ -125,6 +175,15 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           onPressed: _isLoading ? null : () => Navigator.pop(context),
         ),
         actions: [
+          if (!isEdit && itemSettings.sequentialEntryEnabled)
+            IconButton(
+              onPressed: () {
+                Navigator.pop(context);
+                context.push('/product/add/quick');
+              },
+              icon: const Icon(Icons.flash_on),
+              tooltip: 'Quick Entry',
+            ),
           IconButton(
             onPressed: _isLoading ? null : _showImagePickerOptions,
             icon: const Icon(Icons.photo_camera_outlined),
@@ -241,6 +300,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     _selectedDetailsTab == 1 &&
                     !_isService)
                   _buildStock(context),
+                const SizedBox(height: 12),
+                _buildVariantsSection(context),
                 const SizedBox(height: 12),
                 _buildExpirySection(context),
                 const SizedBox(height: 12),
@@ -902,48 +963,735 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Expiry Date',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+            const Text(
+              'Expiry Settings',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
             ),
             Switch(
               value: _expiryAlertEnabled,
-              onChanged: (value) => setState(() => _expiryAlertEnabled = value),
+              onChanged: (v) => setState(() => _expiryAlertEnabled = v),
             ),
           ],
         ),
         if (_expiryAlertEnabled) ...[
-          const SizedBox(height: 10),
-          TextFormField(
-            readOnly: true,
-            decoration: InputDecoration(
-              hintText: _expiryDate == null
-                  ? 'Select expiry date'
-                  : '${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}',
-              suffixIcon: const Icon(Icons.calendar_today),
-            ),
-            onTap: _pickExpiryDate,
-          ),
-          const SizedBox(height: 10),
-          DropdownButtonFormField<int>(
-            initialValue: _expiryAlertDays,
-            decoration: const InputDecoration(
-              labelText: 'Alert before',
-            ),
-            items: const [
-              DropdownMenuItem(value: 7, child: Text('7 days')),
-              DropdownMenuItem(value: 30, child: Text('30 days')),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: TextFormField(
+                  readOnly: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Expiry Date',
+                    suffixIcon: Icon(Icons.calendar_month),
+                  ),
+                  controller: TextEditingController(
+                    text: _expiryDate != null
+                        ? '${_expiryDate!.year}-${_expiryDate!.month.toString().padLeft(2, '0')}-${_expiryDate!.day.toString().padLeft(2, '0')}'
+                        : '',
+                  ),
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: _expiryDate ?? DateTime.now().add(const Duration(days: 30)),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 3650)),
+                    );
+                    if (date != null) {
+                      setState(() => _expiryDate = date);
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 1,
+                child: TextFormField(
+                  initialValue: _expiryAlertDays.toString(),
+                  decoration: const InputDecoration(
+                    labelText: 'Alert Days',
+                    suffixText: 'days',
+                  ),
+                  keyboardType: TextInputType.number,
+                  onChanged: (v) => _expiryAlertDays = int.tryParse(v) ?? 7,
+                ),
+              ),
             ],
-            onChanged: (value) {
-              if (value != null) {
-                setState(() => _expiryAlertDays = value);
-              }
-            },
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildVariantsSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _hasVariants ? const Color(0xFFF5F5FF) : Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _hasVariants ? const Color(0xFF3D8BFF) : Colors.grey[300]!,
+              width: _hasVariants ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.style,
+                        color: _hasVariants
+                            ? const Color(0xFF3D8BFF)
+                            : Colors.grey,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Product Variants',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: _hasVariants
+                              ? const Color(0xFF3D8BFF)
+                              : Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  Switch(
+                    value: _hasVariants,
+                    onChanged: (v) => setState(() {
+                      _hasVariants = v;
+                      if (v) {
+                        _variants = {'Size': [], 'Color': []};
+                      } else {
+                        _variants = {};
+                      }
+                    }),
+                  ),
+                ],
+              ),
+              if (_hasVariants) ...[
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 12),
+                _buildQuickTemplates(),
+                const SizedBox(height: 16),
+                _buildColorsSection(),
+                const SizedBox(height: 16),
+                _buildSizesSection(),
+                const SizedBox(height: 16),
+                _buildCustomVariantSection(),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickTemplates() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Quick Templates',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _buildTemplateChip('Clothing Size', Icons.checkroom, () {
+              setState(() {
+                _variants['Size'] = clothingSizes['Clothing']!;
+              });
+            }),
+            _buildTemplateChip('T-Shirt Size', Icons.checkroom, () {
+              setState(() {
+                _variants['Size'] = apparelSizes['Shirt']!;
+              });
+            }),
+            _buildTemplateChip('Jeans', Icons.straighten, () {
+              setState(() {
+                _variants['Size'] = apparelSizes['Jeans']!;
+              });
+            }),
+            _buildTemplateChip('Shoes (US Men)', Icons.directions_walk, () {
+              setState(() {
+                _variants['Size'] = shoeSizes['US Men']!;
+              });
+            }),
+            _buildTemplateChip('Shoes (US Women)', Icons.directions_walk, () {
+              setState(() {
+                _variants['Size'] = shoeSizes['US Women']!;
+              });
+            }),
+            _buildTemplateChip('Shoes (EU)', Icons.directions_walk, () {
+              setState(() {
+                _variants['Size'] = shoeSizes['EU']!;
+              });
+            }),
+            _buildTemplateChip('Kids Size', Icons.child_care, () {
+              setState(() {
+                _variants['Size'] = clothingSizes['Kids']!;
+              });
+            }),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTemplateChip(String label, IconData icon, VoidCallback onTap) {
+    return Material(
+      color: const Color(0xFFE8F0FE),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: const Color(0xFF1A73E8)),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFF1A73E8),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorsSection() {
+    final colorOptions = _variants['Color'] ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Colors',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+                fontSize: 14,
+              ),
+            ),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: () => _showColorPicker(),
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Add Color'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF1A73E8),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => _showAddColorDialog(),
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text('Custom'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        if (colorOptions.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: colorOptions.map((colorHex) {
+              final colorValue = int.tryParse(colorHex.replaceAll('#', ''), radix: 16) ?? 0xFF000000;
+              final displayColor = Color(0xFF000000 | colorValue);
+              final colorName = colorNames[colorHex] ?? 'Custom';
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
+                  color: displayColor,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[400]!, width: 2),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: displayColor.computeLuminance() > 0.5 ? Colors.black12 : Colors.white24,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      colorName,
+                      style: TextStyle(
+                        color: displayColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          colorOptions.remove(colorHex);
+                          _variants['Color'] = colorOptions;
+                        });
+                      },
+                      child: Icon(
+                        Icons.close,
+                        size: 16,
+                        color: displayColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ] else ...[
+          const SizedBox(height: 8),
+          Text(
+            'No colors added. Tap "Add Color" to select from palette.',
+            style: TextStyle(color: Colors.grey[500], fontSize: 12),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSizesSection() {
+    final sizeOptions = _variants['Size'] ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Sizes',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+                fontSize: 14,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => _showSizePicker(),
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Add Size'),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF1A73E8),
+              ),
+            ),
+          ],
+        ),
+        if (sizeOptions.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: sizeOptions.map((size) {
+              return Chip(
+                label: Text(
+                  size,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+                onDeleted: () {
+                  setState(() {
+                    sizeOptions.remove(size);
+                    _variants['Size'] = sizeOptions;
+                  });
+                },
+                backgroundColor: const Color(0xFFE8F0FE),
+                deleteIconColor: const Color(0xFF1A73E8),
+              );
+            }).toList(),
+          ),
+        ] else ...[
+          const SizedBox(height: 8),
+          Text(
+            'No sizes added. Use quick templates above or add custom sizes.',
+            style: TextStyle(color: Colors.grey[500], fontSize: 12),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCustomVariantSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Other Variants',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+                fontSize: 14,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: _showAddVariantDialog,
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Add Custom'),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF1A73E8),
+              ),
+            ),
+          ],
+        ),
+        if (_variants.entries.any((e) => e.key != 'Size' && e.key != 'Color' && e.value.isNotEmpty)) ...[
+          const SizedBox(height: 8),
+          ..._variants.entries.where((e) => e.key != 'Size' && e.key != 'Color' && e.value.isNotEmpty).map((entry) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          entry.key,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: entry.value.map((opt) => Chip(
+                            label: Text(opt, style: const TextStyle(fontSize: 11)),
+                            visualDensity: VisualDensity.compact,
+                            onDeleted: () {
+                              setState(() {
+                                entry.value.remove(opt);
+                              });
+                            },
+                          )).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                    onPressed: () => setState(() => _variants.remove(entry.key)),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ],
+    );
+  }
+
+  void _showColorPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Select Color',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 6,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: predefinedColors.length,
+                  itemBuilder: (context, index) {
+                    final color = predefinedColors[index];
+                    final hexColor = color.value.toRadixString(16).substring(2).toUpperCase();
+                    final name = colorNames[hexColor] ?? 'Color';
+
+                    return InkWell(
+                      onTap: () {
+                        setState(() {
+                          if (!_variants['Color']!.contains(hexColor)) {
+                            _variants['Color']!.add(hexColor);
+                          }
+                        });
+                        Navigator.pop(context);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!, width: 2),
+                        ),
+                        child: Center(
+                          child: Text(
+                            name,
+                            style: TextStyle(
+                              color: color.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSizePicker() {
+    final sizes = <String>{
+      ...clothingSizes['Clothing']!,
+      ...clothingSizes['Kids']!,
+      ...shoeSizes['US Men']!,
+      ...shoeSizes['US Women']!,
+      ...shoeSizes['UK']!,
+      ...shoeSizes['EU']!,
+      ...apparelSizes['Shirt']!,
+      ...apparelSizes['Jeans']!,
+    }.toList()..sort();
+
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: ListView(
+            children: [
+              ListTile(
+                title: const Text('Add Custom Size'),
+                leading: const Icon(Icons.add),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAddVariantOptionDialog('Size');
+                },
+              ),
+              const Divider(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'Quick Select',
+                  style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w600),
+                ),
+              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: sizes.map((size) {
+                  final isSelected = _variants['Size']!.contains(size);
+                  return FilterChip(
+                    label: Text(size),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          _variants['Size']!.add(size);
+                        } else {
+                          _variants['Size']!.remove(size);
+                        }
+                      });
+                    },
+                    selectedColor: const Color(0xFFE8F0FE),
+                    checkmarkColor: const Color(0xFF1A73E8),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAddColorDialog() {
+    final controller = TextEditingController();
+    Color selectedColor = Colors.black;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add Custom Color'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: selectedColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[400]!, width: 2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Color Name',
+                  hintText: 'e.g., Navy Blue',
+                ),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: predefinedColors.take(12).map((color) {
+                  return InkWell(
+                    onTap: () => setDialogState(() => selectedColor = color),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(8),
+                        border: selectedColor == color
+                            ? Border.all(color: const Color(0xFF1A73E8), width: 3)
+                            : Border.all(color: Colors.grey[300]!),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final colorName = controller.text.trim();
+                final colorHex = selectedColor.value.toRadixString(16).substring(2).toUpperCase();
+                if (colorName.isNotEmpty) {
+                  setState(() {
+                    if (!_variants['Color']!.contains(colorHex)) {
+                      _variants['Color']!.add(colorHex);
+                    }
+                  });
+                }
+                Navigator.pop(ctx);
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddVariantDialog() {
+    final nameCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('New Variant Category'),
+        content: TextField(
+          controller: nameCtrl,
+          decoration: const InputDecoration(hintText: 'E.g., Size, Color'),
+          textCapitalization: TextCapitalization.words,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              final val = nameCtrl.text.trim();
+              if (val.isNotEmpty && !_variants.containsKey(val)) {
+                setState(() => _variants[val] = []);
+                Navigator.pop(ctx);
+                _showAddVariantOptionDialog(val);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddVariantOptionDialog(String categoryKey) {
+    final optCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Add Option to $categoryKey'),
+        content: TextField(
+          controller: optCtrl,
+          decoration: const InputDecoration(hintText: 'E.g., Large, Red'),
+          textCapitalization: TextCapitalization.words,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              final val = optCtrl.text.trim();
+              if (val.isNotEmpty) {
+                setState(() {
+                  if (!_variants[categoryKey]!.contains(val)) {
+                    _variants[categoryKey]!.add(val);
+                  }
+                });
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -999,18 +1747,6 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     }
   }
 
-  Future<void> _pickExpiryDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 3650)),
-      initialDate: _expiryDate ?? DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null) {
-      setState(() => _expiryDate = picked);
-    }
-  }
-
   Future<void> _saveProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -1029,6 +1765,11 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
 
       if (isEdit) {
         // Update existing product
+        String? variantOptionsJson;
+        if (_hasVariants && _variants.isNotEmpty) {
+          variantOptionsJson = jsonEncode(_variants);
+        }
+
         final updatedProduct = widget.product!.copyWith(
           name: _nameController.text.trim(),
           barcode: _barcodeController.text.trim().isEmpty
@@ -1045,6 +1786,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
               ? null
               : _categoryController.text.trim(),
           imagePath: _imagePath,
+          hasVariants: _hasVariants,
+          variantOptions: variantOptionsJson,
           expiryDate: _expiryAlertEnabled ? _expiryDate : null,
           expiryAlertEnabled: _expiryAlertEnabled,
           expiryAlertDays: _expiryAlertDays,
@@ -1072,6 +1815,11 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
         }
       } else {
         // Add new product
+        String? variantOptionsJson;
+        if (_hasVariants && _variants.isNotEmpty) {
+          variantOptionsJson = jsonEncode(_variants);
+        }
+
         final id = await ref.read(productActionsProvider.notifier).addProduct(
               name: _nameController.text.trim(),
               barcode: _barcodeController.text.trim().isEmpty
