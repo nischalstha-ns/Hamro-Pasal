@@ -52,6 +52,13 @@ class PosCart extends _$PosCart {
     state = state.copyWith(items: items);
   }
 
+  void updatePrice(int index, double newPrice) {
+    final items = List<PosCartItem>.from(state.items);
+    final updatedProduct = items[index].product.copyWith(price: newPrice);
+    items[index] = items[index].copyWith(product: updatedProduct);
+    state = state.copyWith(items: items);
+  }
+
   void setCustomer(CustomerModel? customer) {
     state = state.copyWith(selectedCustomer: customer);
   }

@@ -22,6 +22,7 @@ import '../../features/transactions/screens/sale_form_screen.dart';
 import '../../features/transactions/screens/purchase_form_screen.dart';
 import '../../features/transactions/screens/expense_form_screen.dart';
 import '../../features/pos/screens/pos_screen.dart';
+import '../../features/pos/screens/modern_pos_screen.dart';
 import '../../features/products/screens/sequential_entry_screen.dart';
 
 part 'app_router.g.dart';
@@ -149,6 +150,11 @@ GoRouter appRouter(AppRouterRef ref) {
       GoRoute(
         path: '/pos',
         name: 'pos',
+        builder: (context, state) => const ModernPosScreen(),
+      ),
+      GoRoute(
+        path: '/pos/classic',
+        name: 'pos-classic',
         builder: (context, state) => const PosScreen(),
       ),
       GoRoute(
